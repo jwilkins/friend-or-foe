@@ -5,6 +5,10 @@ require 'ipinfo'
 require 'arin'
 require 'dnsrbls'
 require 'debugger'
+require 'yaml'
+
+config = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yml'))
+puts thing.inspect
 
 doc = <<DOCOPT
 Usage: #{__FILE__} [options] TARGET
@@ -44,6 +48,7 @@ ip_list.each { |ip|
   if hits.length > 0
     blacklist[ip] ||= []
     blacklist[ip] << hits
+    blacklist[ip].flatten!
   end
 }
 
