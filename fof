@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+$:.unshift File.dirname(__FILE__)
+require 'docopt'
+require 'ipinfo'
+require 'arin'
+require 'dnsrbls'
+require 'debugger'
+
+doc = <<DOCOPT
+Usage: #{__FILE__} [options] TARGET
+
+-h --help     Show this.
+-v --verbose  Print more text.
+-q --quiet    Print less text.
+DOCOPT
+
+begin
+  opt = Docopt::docopt(doc, version: '0.1.0')
+rescue Docopt::Exit => e
+  puts e.message
+end
+target = opt['TARGET']
+
+ip_list = []
+
+puts "Searching for info on #{target}"
+begin
+  ip_list << target if NetAddr.validate_ip_addr(target, :Version => 4)
+rescue => e
+  puts "#{target} isn't an ip, resolving"
+  Net::DNS::Resolver.start(target).each_address do |ip|
+    ip_list << ip
+  end
+end
+
+info_list = {}
+blacklist = {}
+ip_list.each { |ip|
+  cidr = ARIN.block(ip)
+  info_list[cidr] ||= []
+  info_list[cidr] << ip
+
+  hits, timeouts = DNSRBL.check(ip, 20)
+  if hits.length > 0
+    blacklist[ip] ||= []
+    blacklist[ip] << hits
+  end
+}
+
+info_list.keys.each { |kk|
+  puts "#{kk} is owned by #{ARIN.owner(info_list[kk].first)} (#{ARIN.name(info_list[kk].first)})"
+  puts "Registered #{ARIN.registered(info_list[kk].first)}"
+  puts "Contact NOC at #{ARIN.noc(info_list[kk].first)}"
+  info_list[kk].each { |ip|
+    puts "  #{ip}"
+    puts "    #{IPInfo.ip_to_geo(ip)}"
+    if blacklist[ip] && blacklist[ip].length > 0
+      puts "  Blacklisted by #{blacklist[ip].length}: #{blacklist[ip].join(', ')}"
+    else
+      puts "  Not on any DNSRBLs"
+    end
+  }
+}
+
+
+
+

@@ -22,15 +22,15 @@ class DNSRBL
         host = "#{lookup}.#{server.strip}"
         Resolv::getaddress(host)
         printf("%-50s: \e[0;31mLISTED on %s\e[0m\n", host, server) if debug
-        hits << server
+        hits << server.strip
       rescue Resolv::ResolvError => e
-        printf("%-50s: \e[0;32mOK\e[0m\n", host)
+        printf("%-50s: \e[0;32mOK\e[0m\n", host) if debug
       rescue Interrupt => e
         puts "\nCaught signal SIGINT. Exiting..."
         exit
       rescue => e
-        printf("%-50s: \e[0;47mTIMEOUT\e[0m\n", host)
-        timeouts << server
+        printf("%-50s: \e[0;47mTIMEOUT\e[0m\n", host) if debug
+        timeouts << server.strip
       end
     }
 
