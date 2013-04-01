@@ -6,36 +6,45 @@ require 'arin'
 require 'dnsrbls'
 require 'debugger'
 require 'yaml'
-
-config = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yml'))
-puts thing.inspect
+require 'wot'
 
 doc = <<DOCOPT
-Usage: #{__FILE__} [options] TARGET
+Usage: #{__FILE__} [options] TARGET...
 
+Example:
+  #{__FILE__} 4.2.2.4 8.8.8.8
+
+Options:
 -h --help     Show this.
 -v --verbose  Print more text.
 -q --quiet    Print less text.
+-d --dnsrbl   Do DNSRBL lookups (time consuming)
 DOCOPT
 
 begin
   opt = Docopt::docopt(doc, version: '0.1.0')
 rescue Docopt::Exit => e
   puts e.message
+  exit(-1)
 end
-target = opt['TARGET']
+
+targets = ([] << opt['TARGET']).flatten
+dnsrbl = opt['--dnsrbl']
 
 ip_list = []
 
-puts "Searching for info on #{target}"
-begin
-  ip_list << target if NetAddr.validate_ip_addr(target, :Version => 4)
-rescue => e
-  puts "#{target} isn't an ip, resolving"
-  Net::DNS::Resolver.start(target).each_address do |ip|
-    ip_list << ip
+targets.each { |target|
+  puts "Searching for info on #{target}"
+  begin
+    ip_list << target if NetAddr.validate_ip_addr(target, :Version => 4)
+  rescue => e
+    puts "#{target} isn't an ip, resolving"
+    Net::DNS::Resolver.start(target).each_address do |ip|
+      ip_list << ip.to_s
+    end
+    puts WOT.lookup([target])
   end
-end
+}
 
 info_list = {}
 blacklist = {}
@@ -44,22 +53,26 @@ ip_list.each { |ip|
   info_list[cidr] ||= []
   info_list[cidr] << ip
 
-  hits, timeouts = DNSRBL.check(ip, 20)
-  if hits.length > 0
-    blacklist[ip] ||= []
-    blacklist[ip] << hits
-    blacklist[ip].flatten!
+  if dnsrbl
+    hits, timeouts = DNSRBL.check(ip, 20)
+    if hits.length > 0
+      blacklist[ip] ||= []
+      blacklist[ip] << hits
+      blacklist[ip].flatten!
+    end
   end
 }
 
 info_list.keys.each { |kk|
   puts "#{kk} is owned by #{ARIN.owner(info_list[kk].first)} (#{ARIN.name(info_list[kk].first)})"
+  asn = IPInfo.ip_to_asn(info_list[kk].first)
+  puts "ASN #{asn.number} (#{asn.asn})"
   puts "Registered #{ARIN.registered(info_list[kk].first)}"
   puts "Contact NOC at #{ARIN.noc(info_list[kk].first)}"
   info_list[kk].each { |ip|
     puts "  #{ip}"
-    puts "    #{IPInfo.ip_to_geo(ip)}"
-    if blacklist[ip] && blacklist[ip].length > 0
+    puts "    ICBM Address: #{IPInfo.ip_to_geo(ip)}"
+    if dnsrbl && blacklist[ip] && blacklist[ip].length > 0
       puts "  Blacklisted by #{blacklist[ip].length}: #{blacklist[ip].join(', ')}"
     else
       puts "  Not on any DNSRBLs"

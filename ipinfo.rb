@@ -1,4 +1,5 @@
 require 'geocoder'
+require 'geoip'
 require 'whois'
 require 'debugger'
 require 'netaddr'
@@ -13,7 +14,17 @@ class IPInfo
       res << "#{geo.data['city']}, #{geo.data['region_name']}, "\
       "#{geo.data['country_name']}"
     }
-    res.join("\n")
+    res.join(' ')
+  end
+
+  def self.ip_to_geo_mm(ip)
+    gip = GeoIP.new(File.join(File.dirname(__FILE__), 'GeoIPCity.dat'))
+    gip.city(ip)
+  end
+
+  def self.ip_to_asn(ip)
+    gip = GeoIP.new(File.join(File.dirname(__FILE__), 'GeoIPASNum.dat'))
+    gip.asn(ip)
   end
 
   def self.whois(ip)
