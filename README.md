@@ -3,6 +3,7 @@ friend-or-foe
 IP lookup tool
 
 Example:
+
     jwilkins ⮀ friend-or-foe ⮀ ./fof 4.2.2.4
     Searching for info on 4.2.2.4
     4.0.0.0/8 is owned by Level 3 Communications, Inc. (LVLT) (LVLT-ORG-4-8)
