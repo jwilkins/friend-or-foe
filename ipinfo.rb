@@ -1,7 +1,6 @@
 require 'geocoder'
 require 'geoip'
 require 'whois'
-require 'debugger'
 require 'netaddr'
 require 'net/dns'
 
@@ -18,13 +17,21 @@ class IPInfo
   end
 
   def self.ip_to_geo_mm(ip)
-    gip = GeoIP.new(File.join(File.dirname(__FILE__), 'GeoIPCity.dat'))
-    gip.city(ip)
+    geoip_file = File.join(File.dirname(__FILE__), 'GeoIPCity.dat')
+    if File.exist?(geoip_file)
+      gip = GeoIP.new(geoip_file)
+      return gip.city(ip)
+    end
+    'No GeoIPCity file'
   end
 
   def self.ip_to_asn(ip)
-    gip = GeoIP.new(File.join(File.dirname(__FILE__), 'GeoIPASNum.dat'))
-    gip.asn(ip)
+    geoip_file = File.join(File.dirname(__FILE__), 'GeoIPASNum.dat')
+    if File.exist?(geoip_file)
+      gip = GeoIP.new(geoip_file)
+      return gip.asn(ip)
+    end
+    'No GeoIPASNum file'
   end
 
   def self.whois(ip)

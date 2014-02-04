@@ -1,5 +1,4 @@
 require 'httparty'
-require 'debugger'
 
 class ARIN
   include HTTParty

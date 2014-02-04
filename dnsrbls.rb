@@ -1,8 +1,7 @@
-#!/usr/bin/env ruby 
+#!/usr/bin/env ruby
 # DNS Realtime Black List
 require 'resolv'
 require 'parallel'
-require 'debugger'
 
 class DNSRBL
   begin

@@ -4,7 +4,6 @@ require 'docopt'
 require 'ipinfo'
 require 'arin'
 require 'dnsrbls'
-require 'debugger'
 require 'yaml'
 require 'wot'
 
@@ -64,19 +63,39 @@ ip_list.each { |ip|
 }
 
 info_list.keys.each { |kk|
-  puts "#{kk} is owned by #{ARIN.owner(info_list[kk].first)} (#{ARIN.name(info_list[kk].first)})"
-  asn = IPInfo.ip_to_asn(info_list[kk].first)
-  puts "ASN #{asn.number} (#{asn.asn})"
+  begin
+    puts "#{kk} is owned by #{ARIN.owner(info_list[kk].first)} (#{ARIN.name(info_list[kk].first)})"
+  rescue
+    puts "Arin owner/name info unavailable for #{kk}"
+  end
+  begin
+    asn = IPInfo.ip_to_asn(info_list[kk].first)
+    puts "ASN #{asn.number} (#{asn.asn})"
+  rescue
+    puts "ASN info unavailable for #{kk}"
+  end
+
+  begin
   puts "Registered #{ARIN.registered(info_list[kk].first)}"
   puts "Contact NOC at #{ARIN.noc(info_list[kk].first)}"
+  rescue
+    puts "Arin registration/contact info unavailable for #{kk}"
+  end
+
   info_list[kk].each { |ip|
     puts "  #{ip}"
+  begin
     puts "    ICBM Address: #{IPInfo.ip_to_geo(ip)}"
+  rescue
+  end
+  begin
     if dnsrbl && blacklist[ip] && blacklist[ip].length > 0
       puts "  Blacklisted by #{blacklist[ip].length}: #{blacklist[ip].join(', ')}"
     else
       puts "  Not on any DNSRBLs"
     end
+  rescue
+  end
   }
 }
 

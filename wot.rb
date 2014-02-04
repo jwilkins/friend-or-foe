@@ -2,7 +2,6 @@ require 'mechanize'
 require 'httparty'
 require 'json'
 require 'yaml'
-require 'debugger'
 
 class WOT
   include HTTParty
@@ -36,7 +35,7 @@ class WOT
 end
 
 if $0 == __FILE__
-  if ARGV.length > 0 
+  if ARGV.length > 0
     hosts = ARGV
   else
     hosts = %w(4.2.2.4 google.com exploit-db.com thepiratebay.se)
